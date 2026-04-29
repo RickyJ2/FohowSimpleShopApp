@@ -35,6 +35,40 @@ interface InventoryDialogProps {
 
 const DEFAULT_IMAGE = "https://raw.githubusercontent.com/RickyJ2/FohowSimpleShopApp/refs/heads/main/img/DefaultImage.png";
 
+const formatDateForInput = (dateStr: string | undefined): string => {
+  if (!dateStr) return '';
+  
+  // Handle ISO strings with time (e.g. 2024-01-01T00:00:00.000Z)
+  if (dateStr.includes('T')) {
+    const splitT = dateStr.split('T')[0];
+    if (/^\d{4}-\d{2}-\d{2}$/.test(splitT)) return splitT;
+  }
+
+  // If it's already exactly YYYY-MM-DD, return it
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+  
+  // Try to parse DD-MM-YYYY or DD/MM/YYYY or D/M/YYYY
+  const parts = dateStr.split(/[-/]/);
+  if (parts.length === 3) {
+    if (parts[0].length === 4) {
+      // YYYY-MM-DD (but maybe not zero padded)
+      return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].substring(0, 2).padStart(2, '0')}`;
+    } else if (parts[2].length === 4) {
+      // DD-MM-YYYY or D-M-YYYY
+      return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+    }
+  }
+  
+  // Final fallback using standard Date parsing
+  const parsed = new Date(dateStr);
+  if (!isNaN(parsed.getTime())) {
+    // Avoid timezone shift issues by taking UTC or just splitting ISO
+    return parsed.toISOString().split('T')[0];
+  }
+
+  return '';
+};
+
 const InventoryDialog: React.FC<InventoryDialogProps> = ({
   open,
   onClose,
@@ -51,8 +85,8 @@ const InventoryDialog: React.FC<InventoryDialogProps> = ({
       reset({
         baseName: initialData?.baseName || '',
         variant: initialData?.variant || 'Standard',
-        pd: initialData?.pd || '',
-        exp: initialData?.exp || '',
+        pd: formatDateForInput(initialData?.pd),
+        exp: formatDateForInput(initialData?.exp),
         stock: initialData?.stock || 0,
         image: initialData?.image || DEFAULT_IMAGE
       });
@@ -122,8 +156,6 @@ const InventoryDialog: React.FC<InventoryDialogProps> = ({
               slotProps={{ inputLabel: { shrink: true } }}
               sx={{ '& .MuiInputBase-root': { fontSize: '1.2rem' } }}
             />
-          
-
           <TextField
             label="Jumlah Stok"
             type="number"
