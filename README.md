@@ -1,73 +1,89 @@
-# React + TypeScript + Vite
+# Fohow Simple Shop App
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A streamlined inventory and shop management application built for speed and ease of use. This app is specifically optimized for mobile performance and features an elder-friendly UI to ensure accessibility for all users.
 
-Currently, two official plugins are available:
+## 🚀 Key Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **Intuitive Dashboard**: Simplified navigation hub for all core business operations.
+- **Smart Inventory Management**:
+  - Collapsible product groups for a clean overview.
+  - Detailed batch tracking (Production Date, Expiry Date, and Stock).
+  - Visual stock status indicators (Green for available, Red for out of stock).
+- **Fast Debounced Search**: Quickly find items in large inventories with a high-performance filtering system.
+- **Mobile-First Design**: Fully responsive layout that adapts dynamically to any screen size without cropping text.
+- **Elder-Friendly UI**: Large touch targets, high-contrast colors, and optimized typography for maximum readability on budget-friendly and older smartphones.
+- **Capacitor Integration**: Native Android experience with optimized SDK configurations.
 
-## React Compiler
+## 🛠 Tech Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **Core**: React 19 + TypeScript
+- **Bundler**: Vite 8
+- **UI Framework**: Material UI (MUI)
+- **Mobile Wrapper**: Capacitor v8
+- **Styling**: Emotion + Custom Responsive System
 
-## Expanding the ESLint configuration
+## 📦 Getting Started
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### Prerequisites
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+- **Node.js**: Latest LTS version
+- **Android Studio**: For mobile builds
+- **Java JDK 17**: Required for Android compilation
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+### Installation
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+1. Clone the repository
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+### Development
+
+Run the app in your browser:
+
+```bash
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+---
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## 📱 Mobile Build & Deployment (Android)
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+This project uses the **"Antigravity Spec"** for maximum stability on Android devices.
+
+### 1. Build the Web Assets
+
+```bash
+npm run build
 ```
+
+### 2. Sync to Android Project
+
+```bash
+npx cap sync
+```
+
+### 3. Generate APK
+
+1. Open the project in Android Studio:
+   ```bash
+   npx cap open android
+   ```
+2. **Configuration Check**:
+   - Ensure **Gradle JDK** is set to **JDK 17**.
+   - **Compile SDK**: 36
+   - **Target SDK**: 36
+   - **Min SDK**: 24 (Supports Android 7.0+)
+3. Build the APK:
+   - Go to **Build** > **Build Bundle(s) / APK(s)** > **Build APK(s)**.
+
+## 🎨 Asset Management
+
+To update the app icons or splash screens, place your `hero.png` in the `assets/` folder and run:
+
+```bash
+npx capacitor-assets generate --android
+```
+
+---
