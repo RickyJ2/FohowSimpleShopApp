@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { Device } from '@capacitor/device';
-import type { InventoryItem, StatusResponse, BaseResponse } from '../types';
+import type { InventoryGroup, UpdateInventoryItem, StatusResponse, BaseResponse } from '../types';
 
 const GAS_URL = import.meta.env.VITE_GAS_URL;
 const APP_TOKEN = import.meta.env.VITE_APP_TOKEN;
@@ -130,18 +130,17 @@ export const useGasApi = () => {
     }
   }, [deviceId]);
 
-  const getInventory = useCallback(async (): Promise<InventoryItem[] | null> => {
+  const getInventory = useCallback(async (): Promise<InventoryGroup[] | null> => {
     if (!deviceId) return null;
     await Promise.resolve();
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchFromGas<InventoryItem[]>('getInventory', deviceId);
+      const data = await fetchFromGas<InventoryGroup[]>('getInventory', deviceId);
       return data;
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Terjadi kesalahan.';
       setError(errorMessage);
-      // Propagate SESSION_EXPIRED for the UI to handle
       if (errorMessage === 'SESSION_EXPIRED') throw err;
       return null;
     } finally {
@@ -149,13 +148,13 @@ export const useGasApi = () => {
     }
   }, [deviceId]);
 
-  const recordSale = useCallback(async (item: string, price: number): Promise<BaseResponse> => {
+  const recordSale = useCallback(async (payload: { batchId: number; quantity: number; price: number }): Promise<BaseResponse> => {
     if (!deviceId) return { success: false, message: 'Device ID not ready' };
     await Promise.resolve();
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchFromGas<BaseResponse>('addSale', deviceId, { item, price });
+      const data = await fetchFromGas<BaseResponse>('addSale', deviceId, payload);
       return data;
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Terjadi kesalahan.';
@@ -167,7 +166,7 @@ export const useGasApi = () => {
     }
   }, [deviceId]);
 
-  const updateInventory = useCallback(async (item: Partial<InventoryItem>): Promise<BaseResponse> => {
+  const updateInventory = useCallback(async (item: UpdateInventoryItem): Promise<BaseResponse> => {
     if (!deviceId) return { success: false, message: 'Device ID not ready' };
     await Promise.resolve();
     setLoading(true);

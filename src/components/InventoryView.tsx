@@ -1,8 +1,7 @@
-import React, { useEffect, useState, useCallback, lazy, Suspense } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
-  Button,
   Typography,
   CircularProgress,
   Alert,
@@ -10,35 +9,32 @@ import {
   CardContent,
   Grid,
   IconButton,
+  Avatar,
+  Divider,
+  Button,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import EditIcon from '@mui/icons-material/Edit';
-import AddIcon from '@mui/icons-material/Add';
+import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
 import { useGasApi } from '../hooks/useGasApi';
-import type { InventoryItem } from '../types';
-
-// Lazy load the dialog
-const InventoryDialog = lazy(() => import('./InventoryDialog'));
+import type { InventoryGroup } from '../types';
+import defaultImage from '../assets/DefaultImage.png';
 
 const InventoryView: React.FC = () => {
   const navigate = useNavigate();
-  const { getInventory, updateInventory, loading, error } = useGasApi();
-  const [inventory, setInventory] = useState<InventoryItem[]>([]);
-
-  // Minimized State
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [selectedItem, setSelectedItem] = useState<Partial<InventoryItem> | null>(null);
-  const [dialogError, setDialogError] = useState<string | null>(null);
+  const { getInventory, loading, error } = useGasApi();
+  const [inventoryGroups, setInventoryGroups] = useState<InventoryGroup[]>([]);
 
   const fetchInventory = useCallback(async () => {
     try {
       const data = await getInventory();
       if (data) {
-        setInventory(data);
+        setInventoryGroups(data);
       }
     } catch (err: unknown) {
       if (err instanceof Error && err.message === 'SESSION_EXPIRED') {
         navigate('/', { state: { message: 'HP lain sudah masuk. Silakan masuk kembali.' } });
+      } else {
+        console.error('Fetch error:', err);
       }
     }
   }, [getInventory, navigate]);
@@ -50,162 +46,150 @@ const InventoryView: React.FC = () => {
     return () => clearTimeout(timer);
   }, [fetchInventory]);
 
-  const handleOpenCreate = () => {
-    setSelectedItem({});
-    setDialogError(null);
-    setIsDialogOpen(true);
-  };
-
-  const handleOpenEdit = (item: InventoryItem) => {
-    setSelectedItem(item);
-    setDialogError(null);
-    setIsDialogOpen(true);
-  };
-
-  const handleCloseDialog = () => {
-    setIsDialogOpen(false);
-    setSelectedItem(null);
-  };
-
-  const handleFormSubmit = async (data: { name: string; stock: number }) => {
-    setDialogError(null);
-
-    const payload: Partial<InventoryItem> = {
-      name: data.name.trim(),
-      stock: Number(data.stock),
-    };
-
-    if (selectedItem?.id) {
-      payload.id = selectedItem.id;
-    }
-
-    try {
-      const res = await updateInventory(payload);
-      if (res.success) {
-        setIsDialogOpen(false);
-        setSelectedItem(null);
-        fetchInventory();
-      } else {
-        setDialogError(res.message || 'Gagal menyimpan barang.');
-      }
-    } catch (err: unknown) {
-      if (err instanceof Error && err.message === 'SESSION_EXPIRED') {
-        navigate('/', { state: { message: 'HP lain sudah masuk. Silakan masuk kembali.' } });
-      } else {
-        setDialogError('Terjadi kesalahan koneksi saat menyimpan.');
-      }
-    }
-  };
-
   return (
-    <Box sx={{ p: 3, pb: 10 }} className="app-container">
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-        <IconButton onClick={() => navigate('/dashboard')} sx={{ mr: 1 }}>
-          <ArrowBackIcon />
+    <Box sx={{ p: 3, pb: 10, bgcolor: '#FFFFFF', minHeight: '100vh' }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
+        <IconButton 
+          onClick={() => navigate('/dashboard')} 
+          sx={{ mr: 2, width: 60, height: 60 }}
+        >
+          <ArrowBackIcon sx={{ fontSize: 40 }} />
         </IconButton>
-        <Typography variant="h5" sx={{ fontWeight: 'bold' }}>Stok Barang</Typography>
+        <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#000000' }}>
+          Stok Barang
+        </Typography>
       </Box>
 
-      {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
+      {error && <Alert severity="error" sx={{ mb: 3, fontSize: '1.2rem' }}>{error}</Alert>}
 
-      <Button
-        variant="contained"
-        color="primary"
-        startIcon={<AddIcon />}
-        onClick={handleOpenCreate}
-        fullWidth
-        sx={{ mb: 3, py: 2, fontSize: '1.1rem', fontWeight: 'bold', borderRadius: 2 }}
-      >
-        Tambah Stok Baru
-      </Button>
-
-      <Card sx={{ elevation: 3, borderRadius: 3 }}>
-        <CardContent>
-          <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
-            Daftar Stok Saat Ini
-          </Typography>
-          
-          {loading && Array.isArray(inventory) && inventory.length === 0 ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', p: 5 }}>
-              <CircularProgress />
-            </Box>
-          ) : (
-            <Grid container spacing={2}>
-              {Array.isArray(inventory) && inventory.map((item) => (
-                <Grid key={item.id} size={{ xs: 12, sm: 6 }}>
-                  <Box 
-                    sx={{ 
-                      p: 2, 
-                      border: 1, 
-                      borderColor: 'grey.200', 
-                      borderRadius: 2,
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      bgcolor: 'background.default'
-                    }}
-                  >
-                    <Typography variant="body1" sx={{ fontWeight: 'bold', flexGrow: 1, textAlign: 'left' }}>
-                      {item.name}
-                    </Typography>
-                    
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Typography variant="h6" color={item.stock > 0 ? 'primary' : 'error'} sx={{ fontWeight: 'bold' }}>
-                        {item.stock}
-                      </Typography>
-                      <IconButton 
-                        color="primary" 
-                        onClick={() => handleOpenEdit(item)}
-                        disabled={loading}
-                        size="small"
+      {loading && inventoryGroups.length === 0 ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', p: 10 }}>
+          <CircularProgress size={60} />
+        </Box>
+      ) : (
+        <Grid container spacing={3}>
+          {inventoryGroups.map((group) => (
+            <Grid key={group.baseName} size={{ xs: 12 }}>
+              <Card 
+                sx={{ 
+                  borderRadius: 4, 
+                  border: '2px solid #E0E0E0',
+                  boxShadow: 'none',
+                  '&:hover': { borderColor: 'primary.main' }
+                }}
+              >
+                <CardContent sx={{ p: 3 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <Avatar
+                      variant="rounded"
+                      src={group.image || defaultImage}
+                      sx={{ 
+                        width: 100, 
+                        height: 100, 
+                        mr: 3, 
+                        bgcolor: 'grey.100',
+                        border: '1px solid #EEE'
+                      }}
+                    >
+                      <Inventory2OutlinedIcon sx={{ fontSize: 50, color: 'grey.400' }} />
+                    </Avatar>
+                    <Box sx={{ flexGrow: 1 }}>
+                      <Typography 
+                        variant="h5" 
+                        sx={{ 
+                          fontWeight: 900, 
+                          fontSize: '24px', 
+                          color: '#000000',
+                          lineHeight: 1.2
+                        }}
                       >
-                        <EditIcon fontSize="small" />
-                      </IconButton>
+                        {group.baseName}
+                      </Typography>
+                      <Typography 
+                        variant="h6" 
+                        sx={{ 
+                          color: 'primary.main', 
+                          fontWeight: 'bold',
+                          fontSize: '20px'
+                        }}
+                      >
+                        Total: {group.totalStock} Unit
+                      </Typography>
                     </Box>
                   </Box>
-                </Grid>
-              ))}
-              {Array.isArray(inventory) && inventory.length === 0 && !loading && (
-                <Grid key="empty-inventory" size={{ xs: 12 }}>
-                  <Typography variant="body1" color="textSecondary" align="center">
-                    Tidak ada data barang.
-                  </Typography>
-                </Grid>
-              )}
+
+                  <Divider sx={{ mb: 2 }} />
+
+                  <Box sx={{ pl: { xs: 0, sm: 13 } }}>
+                    {group.batches.map((batch) => (
+                      <Box 
+                        key={batch.id} 
+                        sx={{ 
+                          mb: 1.5, 
+                          p: 2, 
+                          bgcolor: '#F9F9F9', 
+                          borderRadius: 2,
+                          borderLeft: '5px solid',
+                          borderColor: batch.stock > 0 ? 'success.main' : 'error.main'
+                        }}
+                      >
+                        <Typography 
+                          sx={{ 
+                            fontSize: '18px', 
+                            fontWeight: 'bold', 
+                            color: '#333333' 
+                          }}
+                        >
+                          {batch.variant}
+                        </Typography>
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mt: 0.5 }}>
+                          <Typography sx={{ fontSize: '16px', color: '#666666' }}>
+                            <strong>PD:</strong> {batch.pd}
+                          </Typography>
+                          <Typography sx={{ fontSize: '16px', color: '#666666' }}>
+                            <strong>EXP:</strong> {batch.exp}
+                          </Typography>
+                          <Typography 
+                            sx={{ 
+                              fontSize: '16px', 
+                              fontWeight: 'bold', 
+                              color: batch.stock > 0 ? 'success.dark' : 'error.main' 
+                            }}
+                          >
+                            <strong>Sisa:</strong> {batch.stock}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    ))}
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
+          
+          {inventoryGroups.length === 0 && !loading && (
+            <Grid size={{ xs: 12 }}>
+              <Typography variant="h6" align="center" color="textSecondary" sx={{ mt: 5 }}>
+                Tidak ada data stok.
+              </Typography>
             </Grid>
           )}
-          
-          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-            <Button 
-              variant="outlined" 
-              size="large"
-              onClick={fetchInventory} 
-              disabled={loading}
-              fullWidth
-              sx={{ py: 1.5 }}
-            >
-              Refresh Data Stok
-            </Button>
-          </Box>
-        </CardContent>
-      </Card>
+        </Grid>
+      )}
 
-      {/* Lazy loaded Dialog */}
-      <Suspense fallback={null}>
-        {isDialogOpen && (
-          <InventoryDialog
-            open={isDialogOpen}
-            onClose={handleCloseDialog}
-            onSubmit={handleFormSubmit}
-            initialData={selectedItem}
-            loading={loading}
-            error={dialogError}
-          />
-        )}
-      </Suspense>
+      <Box sx={{ mt: 5 }}>
+        <Button 
+          variant="outlined" 
+          fullWidth 
+          onClick={fetchInventory}
+          disabled={loading}
+          sx={{ height: 60, fontSize: '1.2rem', fontWeight: 'bold', borderRadius: 3 }}
+        >
+          Refresh Data Stok
+        </Button>
+      </Box>
     </Box>
   );
 };
 
 export default InventoryView;
-

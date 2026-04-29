@@ -7,11 +7,14 @@ function doPost(e) {
     if (!e || !e.postData || !e.postData.contents) {
       return jsonResponse({ error: "No data received" });
     }
+
     // Parse the JSON
     const data = JSON.parse(e.postData.contents);
+
     // Get token
     const APP_SECRET_TOKEN =
       PropertiesService.getScriptProperties().getProperty("TOKEN");
+
     // Check Token
     if (data.token !== APP_SECRET_TOKEN) {
       return jsonResponse({ error: "Unauthorized: Invalid Token" });
@@ -50,7 +53,7 @@ function doPost(e) {
     // If JSON.parse fails, it returns this instead of a Google HTML error
     return jsonResponse({
       error: "JSON Error: " + err.message,
-      raw: e.postData.contents,
+      raw: e.postData ? e.postData.contents : "No postData",
     });
   }
 }
@@ -88,7 +91,6 @@ function handleCheckStatus() {
 function handleMasuk(deviceId) {
   const sheet = SS.getSheetByName("System");
   const current = handleCheckStatus();
-
   if (current.status === "FREE") {
     sheet.getRange("A2").setValue(deviceId);
     sheet.getRange("B2").setValue(new Date());
@@ -112,11 +114,52 @@ function handleKeluar() {
 
 function handleGetInventory() {
   const rows = SS.getSheetByName("Inventory").getDataRange().getValues();
-  const headers = rows.shift(); // Remove headers
-  return rows.map((r) => ({ id: r[0], name: r[1], stock: r[2] }));
+  rows.shift(); // Remove headers
+
+  const grouped = {};
+
+  rows.forEach((r) => {
+    // Schema: ID(0) | Base Name(1) | Variant(2) | PD(3) | EXP(4) | Stock(5) | Image(6)
+    const id = r[0];
+    const baseName = r[1];
+    const variant = r[2];
+    const pd = r[3];
+    const exp = r[4];
+    const stock = Number(r[5]) || 0;
+    const image = r[6] || "";
+
+    if (!baseName) return; // Skip completely empty rows
+
+    if (!grouped[baseName]) {
+      grouped[baseName] = {
+        baseName: baseName,
+        totalStock: 0,
+        image: image,
+        batches: [],
+      };
+    }
+
+    grouped[baseName].totalStock += stock;
+    grouped[baseName].batches.push({
+      id: id,
+      variant: variant,
+      pd:
+        pd instanceof Date
+          ? Utilities.formatDate(pd, "GMT+7", "yyyy-MM-dd")
+          : pd,
+      exp:
+        exp instanceof Date
+          ? Utilities.formatDate(exp, "GMT+7", "yyyy-MM-dd")
+          : exp,
+      stock: stock,
+    });
+  });
+
+  return Object.values(grouped);
 }
 
 function handleAddSale(itemName, price) {
+  // Ignored/untouched as requested
   const invSheet = SS.getSheetByName("Inventory");
   const salesSheet = SS.getSheetByName("Sales");
 
@@ -141,25 +184,44 @@ function handleAddSale(itemName, price) {
 function handleUpdateInventory(item) {
   const sheet = SS.getSheetByName("Inventory");
   const data = sheet.getDataRange().getValues();
-  
+
   if (item.id) {
-    // Edit existing
+    // Edit existing batch
     for (let i = 1; i < data.length; i++) {
       if (data[i][0] == item.id) {
-        sheet.getRange(i + 1, 2).setValue(item.name);
-        sheet.getRange(i + 1, 3).setValue(item.stock);
+        if (item.baseName !== undefined)
+          sheet.getRange(i + 1, 2).setValue(item.baseName);
+        if (item.variant !== undefined)
+          sheet.getRange(i + 1, 3).setValue(item.variant);
+        if (item.pd !== undefined) sheet.getRange(i + 1, 4).setValue(item.pd);
+        if (item.exp !== undefined) sheet.getRange(i + 1, 5).setValue(item.exp);
+        if (item.stock !== undefined)
+          sheet.getRange(i + 1, 6).setValue(item.stock);
+        if (item.image !== undefined)
+          sheet.getRange(i + 1, 7).setValue(item.image);
         break;
       }
     }
   } else {
-    // Create new
-    const newId = Utilities.getUuid();
-    sheet.appendRow([newId, item.name, item.stock]);
+    // Create new batch with Immutable ID logic
+    const ids = data.slice(1).map((r) => r[0]); // Get all existing IDs
+    const maxId = ids.length > 0 ? Math.max(...ids.filter(Number)) : 0;
+    const newId = maxId + 1;
+
+    sheet.appendRow([
+      newId,
+      item.baseName || "",
+      item.variant || "Standard",
+      item.pd || "-",
+      item.exp || "-",
+      item.stock || 0,
+      item.image || "",
+    ]);
   }
-  
+
   // Update Activity Timestamp
   SS.getSheetByName("System").getRange("B2").setValue(new Date());
-  
+
   return { success: true };
 }
 
