@@ -4,6 +4,7 @@ import DashboardView from './components/DashboardView';
 import InventoryView from './components/InventoryView';
 // import SalesView from './components/SalesView';
 // import ReportsView from './components/ReportsView';
+import { LoadingProvider } from './context/LoadingProvider';
 import Header from './components/Header';
 import './App.css';
 
@@ -17,10 +18,11 @@ import './App.css';
  */
 function App() {
   return (
-    <Router>
-      <div className="app-container">
-        <Header />
-        <Routes>
+    <LoadingProvider>
+      <Router>
+        <div className="app-container">
+          <Header />
+          <Routes>
           {/* Main Entry & Auth */}
           <Route path="/" element={<EntryView />} />
           
@@ -36,6 +38,7 @@ function App() {
         </Routes>
       </div>
     </Router>
+    </LoadingProvider>
   );
 }
 

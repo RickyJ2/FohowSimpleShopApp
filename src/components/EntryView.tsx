@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Box, Button, Typography, CircularProgress, Alert, Card, CardContent } from '@mui/material';
+import { Box, Button, Typography, Alert, Card, CardContent } from '@mui/material';
 import { useGasApi } from '../hooks/useGasApi';
 
 const EntryView: React.FC = () => {
@@ -33,7 +33,7 @@ const EntryView: React.FC = () => {
     if (res && res.success) {
       navigate('/dashboard');
     } else {
-      setLocalError(res.message || 'Gagal masuk ke sistem. Sedang digunakan.');
+      setLocalError(res.message || 'Gagal masuk ke sistem.');
       fetchStatus();
     }
   };
@@ -85,17 +85,13 @@ const EntryView: React.FC = () => {
           </Typography>
           
           <Box sx={{ mb: 4 }}>
-            {status === 'UNKNOWN' && loading ? (
-              <CircularProgress size={40} />
-            ) : (
-              <Typography
-                variant="h5"
-                color={status === 'FREE' || isMine ? 'primary' : 'error'}
-                sx={{fontWeight: 'bold'}}
-              >
-                {status === 'FREE' ? 'TERSEDIA' : isMine ? 'ANDA SUDAH MASUK' : 'SEDANG DIGUNAKAN'}
-              </Typography>
-            )}
+            <Typography
+              variant="h5"
+              color={status === 'FREE' || isMine ? 'primary' : 'error'}
+              sx={{fontWeight: 'bold'}}
+            >
+              {status === 'FREE' ? 'TERSEDIA' : isMine ? 'ANDA SUDAH MASUK' : 'SEDANG DIGUNAKAN'}
+            </Typography>
           </Box>
 
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -115,7 +111,7 @@ const EntryView: React.FC = () => {
                   '&:hover': { bgcolor: '#e65100' }
                 }}
               >
-                {loading ? <CircularProgress size={28} color="inherit" /> : 'PAKSA MASUK'}
+                PAKSA MASUK
               </Button>
             ) : (
               <Button
@@ -127,7 +123,7 @@ const EntryView: React.FC = () => {
                 onClick={handleMasuk}
                 sx={{ py: 2, fontSize: '1.2rem', fontWeight: 'bold' }}
               >
-                {loading ? <CircularProgress size={28} color="inherit" /> : 'MASUK APLIKASI'}
+                MASUK APLIKASI
               </Button>
             )}
 

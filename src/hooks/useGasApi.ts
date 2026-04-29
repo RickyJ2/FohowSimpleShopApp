@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { Device } from '@capacitor/device';
+import { useLoading } from '../context/LoadingState';
 import type { InventoryGroup, UpdateInventoryItem, StatusResponse, BaseResponse } from '../types';
 
 const GAS_URL = import.meta.env.VITE_GAS_URL;
@@ -45,7 +46,7 @@ const fetchFromGas = async <T>(action: string, deviceId: string, payload: Record
 };
 
 export const useGasApi = () => {
-  const [loading, setLoading] = useState(false);
+  const { loading, setLoading } = useLoading();
   const [error, setError] = useState<string | null>(null);
   const [deviceId, setDeviceId] = useState<string>('');
 

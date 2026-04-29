@@ -6,16 +6,24 @@ import {
   Card,
   CardContent,
   Grid,
+  type SvgIconProps,
 } from '@mui/material';
 import InventoryIcon from '@mui/icons-material/Inventory';
 // import PointOfSaleIcon from '@mui/icons-material/PointOfSale';
 import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
 // import AssessmentIcon from '@mui/icons-material/Assessment';
 
+interface MenuItem {
+  title: string;
+  description: string;
+  icon: React.ReactElement<SvgIconProps>;
+  path: string;
+}
+
 const DashboardView: React.FC = () => {
   const navigate = useNavigate();
 
-  const menuItems = [
+  const menuItems: MenuItem[] = [
     {
       title: 'STOK BARANG',
       description: 'Lihat daftar barang dan sisa stok.',
@@ -43,17 +51,32 @@ const DashboardView: React.FC = () => {
   ];
 
   return (
-    <Box sx={{ p: 3, pb: 10, bgcolor: '#FFFFFF' }} className="app-container">
-      <Box sx={{ mb: 6, mt: 2 }}>
-        <Typography variant="h3" sx={{ color: '#225E37', fontWeight: 900, mb: 1 }}>
+    <Box sx={{ p: { xs: 2, sm: 3 }, pb: 10, bgcolor: '#FFFFFF' }} className="app-container">
+      <Box sx={{ mb: { xs: 4, sm: 6 }, mt: 2 }}>
+        <Typography 
+          variant="h3" 
+          sx={{ 
+            color: '#225E37', 
+            fontWeight: 900, 
+            mb: 1,
+            fontSize: { xs: '2rem', sm: '3rem' }
+          }}
+        >
           Selamat Datang
         </Typography>
-        <Typography variant="h5" color="textSecondary" sx={{ fontWeight: 'medium' }}>
+        <Typography 
+          variant="h5" 
+          color="textSecondary" 
+          sx={{ 
+            fontWeight: 'medium',
+            fontSize: { xs: '1.1rem', sm: '1.5rem' }
+          }}
+        >
           Pilih menu di bawah untuk mulai:
         </Typography>
       </Box>
 
-      <Grid container spacing={4}>
+      <Grid container spacing={3}>
         {menuItems.map((item) => (
           <Grid key={item.title} size={{ xs: 12 }}>
             <Card 
@@ -71,15 +94,43 @@ const DashboardView: React.FC = () => {
               }}
               onClick={() => navigate(item.path)}
             >
-              <CardContent sx={{ display: 'flex', alignItems: 'center', p: 4, minHeight: 120 }}>
-                <Box sx={{ mr: 4, display: 'flex', alignItems: 'center' }}>
-                  {item.icon}
+              <CardContent 
+                sx={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  p: { xs: 2.5, sm: 4 }, 
+                  minHeight: { xs: 100, sm: 120 } 
+                }}
+              >
+                <Box sx={{ mr: { xs: 2.5, sm: 4 }, display: 'flex', alignItems: 'center' }}>
+                  {React.cloneElement(item.icon, {
+                    sx: { 
+                      ...item.icon.props.sx,
+                      fontSize: { xs: 45, sm: 60 } 
+                    }
+                  })}
                 </Box>
                 <Box sx={{ textAlign: 'left' }}>
-                  <Typography variant="h4" sx={{ fontWeight: 900, mb: 1, color: '#000000' }}>
+                  <Typography 
+                    variant="h4" 
+                    sx={{ 
+                      fontWeight: 900, 
+                      mb: 0.5, 
+                      color: '#000000',
+                      fontSize: { xs: '1.4rem', sm: '2.125rem' },
+                      lineHeight: 1.2
+                    }}
+                  >
                     {item.title}
                   </Typography>
-                  <Typography variant="h6" color="textSecondary" sx={{ fontSize: '20px' }}>
+                  <Typography 
+                    variant="h6" 
+                    color="textSecondary" 
+                    sx={{ 
+                      fontSize: { xs: '0.95rem', sm: '1.25rem' },
+                      lineHeight: 1.3
+                    }}
+                  >
                     {item.description}
                   </Typography>
                 </Box>

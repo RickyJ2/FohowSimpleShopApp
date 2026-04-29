@@ -37,7 +37,7 @@ function doPost(e) {
       case "masuk":
         return jsonResponse(handleMasuk(deviceId));
       case "forceLogin":
-        return jsonResponse(handleForceLogin(deviceId));
+        return jsonResponse(handleMasuk(deviceId));
       case "keluar":
         return jsonResponse(handleKeluar());
       case "getInventory":
@@ -89,18 +89,6 @@ function handleCheckStatus() {
 }
 
 function handleMasuk(deviceId) {
-  const sheet = SS.getSheetByName("System");
-  const current = handleCheckStatus();
-  if (current.status === "FREE") {
-    sheet.getRange("A2").setValue(deviceId);
-    sheet.getRange("B2").setValue(new Date());
-    return { success: true, message: "Welcome" };
-  } else {
-    return { success: false, currentOwner: current.status };
-  }
-}
-
-function handleForceLogin(deviceId) {
   const sheet = SS.getSheetByName("System");
   sheet.getRange("A2").setValue(deviceId);
   sheet.getRange("B2").setValue(new Date());
