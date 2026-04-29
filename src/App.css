@@ -1,0 +1,15 @@
+.app-container {
+  max-width: 600px;
+  margin: 0 auto;
+  min-height: 100vh;
+  background-color: #f9f9f9;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
+}
+
+/* Ensure full-screen background on mobile */
+@media (max-width: 600px) {
+  .app-container {
+    max-width: 100%;
+    box-shadow: none;
+  }
+}
