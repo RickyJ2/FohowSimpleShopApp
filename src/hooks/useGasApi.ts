@@ -78,7 +78,7 @@ export const useGasApi = () => {
     } finally {
       setLoading(false);
     }
-  }, [deviceId]);
+  }, [deviceId, setLoading]);
 
   const enterSystem = useCallback(async (): Promise<BaseResponse> => {
     if (!deviceId) return { success: false, message: 'Device ID not ready' };
@@ -95,7 +95,7 @@ export const useGasApi = () => {
     } finally {
       setLoading(false);
     }
-  }, [deviceId]);
+  }, [deviceId, setLoading]);
 
   const forceLogin = useCallback(async (): Promise<BaseResponse> => {
     if (!deviceId) return { success: false, message: 'Device ID not ready' };
@@ -112,7 +112,7 @@ export const useGasApi = () => {
     } finally {
       setLoading(false);
     }
-  }, [deviceId]);
+  }, [deviceId, setLoading]);
 
   const exitSystem = useCallback(async (): Promise<BaseResponse> => {
     if (!deviceId) return { success: false, message: 'Device ID not ready' };
@@ -129,7 +129,7 @@ export const useGasApi = () => {
     } finally {
       setLoading(false);
     }
-  }, [deviceId]);
+  }, [deviceId, setLoading]);
 
   const getInventory = useCallback(async (): Promise<InventoryGroup[] | null> => {
     if (!deviceId) return null;
@@ -147,7 +147,7 @@ export const useGasApi = () => {
     } finally {
       setLoading(false);
     }
-  }, [deviceId]);
+  }, [deviceId, setLoading]);
 
   const recordSale = useCallback(async (payload: { batchId: number; quantity: number; price: number }): Promise<BaseResponse> => {
     if (!deviceId) return { success: false, message: 'Device ID not ready' };
@@ -165,7 +165,7 @@ export const useGasApi = () => {
     } finally {
       setLoading(false);
     }
-  }, [deviceId]);
+  }, [deviceId, setLoading]);
 
   const updateInventory = useCallback(async (item: UpdateInventoryItem): Promise<BaseResponse> => {
     if (!deviceId) return { success: false, message: 'Device ID not ready' };
@@ -183,7 +183,25 @@ export const useGasApi = () => {
     } finally {
       setLoading(false);
     }
-  }, [deviceId]);
+  }, [deviceId, setLoading]);
+
+  const updateBaseName = useCallback(async (oldBaseName: string, newBaseName: string): Promise<BaseResponse> => {
+    if (!deviceId) return { success: false, message: 'Device ID not ready' };
+    await Promise.resolve();
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await fetchFromGas<BaseResponse>('updateBaseName', deviceId, { oldBaseName, newBaseName });
+      return data;
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Terjadi kesalahan.';
+      setError(errorMessage);
+      if (errorMessage === 'SESSION_EXPIRED') throw err;
+      return { success: false, message: errorMessage };
+    } finally {
+      setLoading(false);
+    }
+  }, [deviceId, setLoading]);
 
   return {
     loading,
@@ -195,6 +213,7 @@ export const useGasApi = () => {
     exitSystem,
     getInventory,
     updateInventory,
+    updateBaseName,
     recordSale,
   };
 };

@@ -5,6 +5,7 @@ import InventoryView from './components/InventoryView';
 // import SalesView from './components/SalesView';
 // import ReportsView from './components/ReportsView';
 import { LoadingProvider } from './context/LoadingProvider';
+import { ConfirmDialogProvider } from './context/ConfirmDialogProvider';
 import Header from './components/Header';
 import './App.css';
 
@@ -19,7 +20,8 @@ import './App.css';
 function App() {
   return (
     <LoadingProvider>
-      <Router>
+      <ConfirmDialogProvider>
+        <Router>
         <div className="app-container">
           <Header />
           <Routes>
@@ -37,7 +39,8 @@ function App() {
           {/* <Route path="/reports" element={<ReportsView />} /> */}
         </Routes>
       </div>
-    </Router>
+        </Router>
+      </ConfirmDialogProvider>
     </LoadingProvider>
   );
 }

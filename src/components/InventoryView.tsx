@@ -14,6 +14,11 @@ import {
   Collapse,
   TextField,
   InputAdornment,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  CircularProgress
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
@@ -27,6 +32,41 @@ import type { InventoryGroup, InventoryItem, Batch, UpdateInventoryItem } from '
 import defaultImage from '../assets/DefaultImage.png';
 
 const InventoryDialog = lazy(() => import('./InventoryDialog'));
+
+// --- Helper functions ---
+
+const formatDate = (dateStr: string | undefined): string => {
+  if (!dateStr) return '-';
+  
+  // Handle ISO strings with time (e.g. 2024-01-01T00:00:00.000Z)
+  if (dateStr.includes('T')) {
+    const splitT = dateStr.split('T')[0];
+    if (/^\d{4}-\d{2}-\d{2}$/.test(splitT)) return splitT;
+  }
+
+  // If it's already exactly YYYY-MM-DD, return it
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+  
+  // Try to parse DD-MM-YYYY or DD/MM/YYYY or D/M/YYYY
+  const parts = dateStr.split(/[-/]/);
+  if (parts.length === 3) {
+    if (parts[0].length === 4) {
+      // YYYY-MM-DD (but maybe not zero padded)
+      return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].substring(0, 2).padStart(2, '0')}`;
+    } else if (parts[2].length === 4) {
+      // DD-MM-YYYY or D-M-YYYY
+      return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+    }
+  }
+  
+  // Final fallback using standard Date parsing
+  const parsed = new Date(dateStr);
+  if (!isNaN(parsed.getTime())) {
+    return parsed.toISOString().split('T')[0];
+  }
+
+  return dateStr;
+};
 
 // --- Sub-components for better performance and maintenance ---
 
@@ -77,10 +117,10 @@ const BatchItemRow = memo(({
       </Typography>
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, mt: 0.5 }}>
         <Typography sx={{ fontSize: { xs: '14px', sm: '16px' }, color: '#666666', textAlign: 'left' }}>
-          <strong>PD:</strong> {batch.pd}
+          <strong>PD:</strong> {formatDate(batch.pd)}
         </Typography>
         <Typography sx={{ fontSize: { xs: '14px', sm: '16px' }, color: '#666666', textAlign: 'left' }}>
-          <strong>EXP:</strong> {batch.exp}
+          <strong>EXP:</strong> {formatDate(batch.exp)}
         </Typography>
         <Typography 
           sx={{ 
@@ -117,12 +157,14 @@ const InventoryGroupCard = memo(({
   group, 
   isExpanded, 
   onToggle, 
-  onEditBatch 
+  onEditBatch,
+  onEditBaseName
 }: { 
   group: InventoryGroup, 
   isExpanded: boolean, 
   onToggle: (name: string) => void,
-  onEditBatch: (group: InventoryGroup, batch: Batch) => void
+  onEditBatch: (group: InventoryGroup, batch: Batch) => void,
+  onEditBaseName: (oldName: string) => void
 }) => (
   <Card 
     sx={{ 
@@ -156,24 +198,38 @@ const InventoryGroupCard = memo(({
         >
           <Inventory2OutlinedIcon sx={{ fontSize: { xs: 35, sm: 40 }, color: 'grey.400' }} />
         </Avatar>
-        <Box sx={{ flexGrow: 1 }}>
-          <Typography 
-            variant="h5" 
-            sx={{ 
-              fontWeight: 900, 
-              fontSize: { xs: '18px', sm: '22px' }, 
-              color: '#000000',
-              lineHeight: 1.2
-            }}
-          >
-            {group.baseName}
-          </Typography>
+        <Box sx={{ flexGrow: 1, textAlign: 'left' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', mb: 0.5 }}>
+            <Typography 
+              variant="h5" 
+              sx={{ 
+                fontWeight: 900, 
+                fontSize: { xs: '18px', sm: '22px' }, 
+                color: '#000000',
+                lineHeight: 1.2,
+                textAlign: 'left'
+              }}
+            >
+              {group.baseName}
+            </Typography>
+            <IconButton 
+              size="small" 
+              onClick={(e) => {
+                e.stopPropagation();
+                onEditBaseName(group.baseName);
+              }}
+              sx={{ ml: 1, color: 'primary.main', bgcolor: 'primary.50' }}
+            >
+              <EditIcon fontSize="small" />
+            </IconButton>
+          </Box>
           <Typography 
             variant="h6" 
             sx={{ 
               color: 'primary.main', 
               fontWeight: 'bold',
-              fontSize: { xs: '14px', sm: '18px' }
+              fontSize: { xs: '14px', sm: '18px' },
+              textAlign: 'left'
             }}
           >
             Total: {group.totalStock} Unit
@@ -186,7 +242,6 @@ const InventoryGroupCard = memo(({
 
       <Collapse in={isExpanded} timeout="auto" unmountOnExit>
         <Divider sx={{ my: 2 }} />
-        <Box sx={{ pl: { xs: 0, sm: 10 } }}>
           {group.batches.map((batch) => (
             <BatchItemRow 
               key={batch.id} 
@@ -194,7 +249,6 @@ const InventoryGroupCard = memo(({
               onEdit={(b) => onEditBatch(group, b)} 
             />
           ))}
-        </Box>
       </Collapse>
     </CardContent>
   </Card>
@@ -238,7 +292,7 @@ const InventorySearchBar = memo(({
 
 const InventoryView: React.FC = () => {
   const navigate = useNavigate();
-  const { getInventory, updateInventory, loading, error } = useGasApi();
+  const { getInventory, updateInventory, updateBaseName, loading, error } = useGasApi();
   const [inventoryGroups, setInventoryGroups] = useState<InventoryGroup[]>([]);
   
   // State
@@ -246,6 +300,13 @@ const InventoryView: React.FC = () => {
   const [selectedItem, setSelectedItem] = useState<Partial<InventoryItem> | null>(null);
   const [dialogError, setDialogError] = useState<string | null>(null);
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+  
+  // BaseName Edit State
+  const [editBaseNameOpen, setEditBaseNameOpen] = useState(false);
+  const [editingOldBaseName, setEditingOldBaseName] = useState('');
+  const [editingNewBaseName, setEditingNewBaseName] = useState('');
+  const [editBaseNameError, setEditBaseNameError] = useState<string | null>(null);
+  const [editBaseNameLoading, setEditBaseNameLoading] = useState(false);
   
   // Search State
   const [searchQuery, setSearchQuery] = useState('');
@@ -300,6 +361,40 @@ const InventoryView: React.FC = () => {
     setDialogError(null);
     setIsDialogOpen(true);
   }, []);
+
+  const handleOpenEditBaseName = useCallback((oldName: string) => {
+    setEditingOldBaseName(oldName);
+    setEditingNewBaseName(oldName);
+    setEditBaseNameError(null);
+    setEditBaseNameOpen(true);
+  }, []);
+
+  const handleEditBaseNameSubmit = async () => {
+    if (!editingNewBaseName.trim()) {
+      setEditBaseNameError("Nama barang tidak boleh kosong.");
+      return;
+    }
+    if (editingNewBaseName.trim() === editingOldBaseName) {
+      setEditBaseNameOpen(false);
+      return;
+    }
+    
+    setEditBaseNameLoading(true);
+    setEditBaseNameError(null);
+    try {
+      const res = await updateBaseName(editingOldBaseName, editingNewBaseName.trim());
+      if (res.success) {
+        setEditBaseNameOpen(false);
+        fetchInventory();
+      } else {
+        setEditBaseNameError(res.message || 'Gagal mengubah nama barang.');
+      }
+    } catch {
+      setEditBaseNameError('Terjadi kesalahan koneksi.');
+    } finally {
+      setEditBaseNameLoading(false);
+    }
+  };
 
   const handleFormSubmit = async (data: Record<string, string | number>) => {
     const payload: UpdateInventoryItem = {
@@ -368,6 +463,7 @@ const InventoryView: React.FC = () => {
                 isExpanded={!!expandedGroups[group.baseName]}
                 onToggle={toggleGroup}
                 onEditBatch={handleOpenEdit}
+                onEditBaseName={handleOpenEditBaseName}
               />
             </Grid>
           ))}
@@ -415,6 +511,45 @@ const InventoryView: React.FC = () => {
           />
         )}
       </Suspense>
+
+      <Dialog open={editBaseNameOpen} onClose={() => !editBaseNameLoading && setEditBaseNameOpen(false)} fullWidth maxWidth="sm">
+        <DialogTitle sx={{ fontWeight: 'bold', color: '#225E37' }}>
+          Ubah Nama Barang
+        </DialogTitle>
+        <DialogContent>
+          {editBaseNameError && <Alert severity="warning" sx={{ mb: 2, mt: 1 }}>{editBaseNameError}</Alert>}
+          <Typography sx={{ mb: 2, mt: 1, color: 'text.secondary' }}>
+            Ini akan mengubah nama barang pada semua varian.
+          </Typography>
+          <TextField
+            autoFocus
+            label="Nama Barang Baru"
+            fullWidth
+            value={editingNewBaseName}
+            onChange={(e) => setEditingNewBaseName(e.target.value)}
+            disabled={editBaseNameLoading}
+            sx={{ mt: 1 }}
+          />
+        </DialogContent>
+        <DialogActions sx={{ p: 3 }}>
+          <Button 
+            variant="outlined" 
+            onClick={() => setEditBaseNameOpen(false)} 
+            disabled={editBaseNameLoading}
+            color="inherit"
+          >
+            Batal
+          </Button>
+          <Button 
+            onClick={handleEditBaseNameSubmit} 
+            variant="contained" 
+            color="primary"
+            disabled={editBaseNameLoading}
+          >
+            {editBaseNameLoading ? <CircularProgress size={24} color="inherit" /> : 'Simpan'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

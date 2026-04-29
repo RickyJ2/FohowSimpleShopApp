@@ -2,19 +2,28 @@ import { AppBar, Toolbar, Typography, Button } from '@mui/material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import ExitToAppIcon from '@mui/icons-material/ExitToApp';
 import { useGasApi } from '../hooks/useGasApi';
+import { useConfirm } from '../context/ConfirmDialogState';
 
 const Header: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { exitSystem, loading } = useGasApi();
+  const { confirm } = useConfirm();
 
   const handleKeluar = async () => {
-    try {
-      await exitSystem();
-    } catch {
-      // Ignore exit errors
+    const isConfirmed = await confirm({
+      title: 'Konfirmasi Keluar',
+      message: 'Apakah anda yakin ingin keluar?'
+    });
+
+    if (isConfirmed) {
+      try {
+        await exitSystem();
+      } catch {
+        // Ignore exit errors
+      }
+      navigate('/');
     }
-    navigate('/');
   };
 
   // Hide the entire Header on the entry page

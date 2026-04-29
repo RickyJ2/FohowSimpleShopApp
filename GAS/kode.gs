@@ -1,5 +1,5 @@
 const SS = SpreadsheetApp.getActiveSpreadsheet();
-const protectedRoute = ["getInventory", "addSale", "keluar", "updateInventory"];
+const protectedRoute = ["getInventory", "addSale", "keluar", "updateInventory", "updateBaseName"];
 
 function doPost(e) {
   try {
@@ -46,6 +46,8 @@ function doPost(e) {
         return jsonResponse(handleAddSale(data.item, data.price));
       case "updateInventory":
         return jsonResponse(handleUpdateInventory(data.item));
+      case "updateBaseName":
+        return jsonResponse(handleUpdateBaseName(data.oldBaseName, data.newBaseName));
       default:
         return jsonResponse({ error: "Invalid Action: " + action });
     }
@@ -211,6 +213,27 @@ function handleUpdateInventory(item) {
   SS.getSheetByName("System").getRange("B2").setValue(new Date());
 
   return { success: true };
+}
+
+function handleUpdateBaseName(oldBaseName, newBaseName) {
+  if (!oldBaseName || !newBaseName) return { error: "Invalid parameters" };
+  const sheet = SS.getSheetByName("Inventory");
+  const data = sheet.getDataRange().getValues();
+  let updated = false;
+
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][1] === oldBaseName) {
+      sheet.getRange(i + 1, 2).setValue(newBaseName);
+      updated = true;
+    }
+  }
+
+  if (updated) {
+    SS.getSheetByName("System").getRange("B2").setValue(new Date());
+    return { success: true };
+  } else {
+    return { error: "Item tidak ditemukan." };
+  }
 }
 
 function jsonResponse(obj) {

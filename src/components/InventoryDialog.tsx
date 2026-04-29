@@ -169,14 +169,16 @@ const InventoryDialog: React.FC<InventoryDialogProps> = ({
             sx={{ '& .MuiInputBase-root': { fontSize: '1.2rem' } }}
           />
 
-          <TextField
-            label="URL Gambar (GitHub)"
-            fullWidth
-            {...register('image')}
-            disabled={loading}
-            placeholder={DEFAULT_IMAGE}
-            sx={{ '& .MuiInputBase-root': { fontSize: '1.2rem' } }}
-          />
+          {!initialData?.id && (
+            <TextField
+              label="URL Gambar (GitHub)"
+              fullWidth
+              {...register('image')}
+              disabled={loading}
+              placeholder={DEFAULT_IMAGE}
+              sx={{ '& .MuiInputBase-root': { fontSize: '1.2rem' } }}
+            />
+          )}
 
         </Box>
       </DialogContent>
