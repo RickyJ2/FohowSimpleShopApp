@@ -38,33 +38,33 @@ const InventoryDialog = lazy(() => import('./InventoryDialog'));
 const formatDate = (dateStr: string | undefined): string => {
   if (!dateStr) return '-';
   
-  // Handle ISO strings with time (e.g. 2024-01-01T00:00:00.000Z)
-  if (dateStr.includes('T')) {
-    const splitT = dateStr.split('T')[0];
-    if (/^\d{4}-\d{2}-\d{2}$/.test(splitT)) return splitT;
-  }
-
-  // If it's already exactly YYYY-MM-DD, return it
+  // 1. If it's already exactly YYYY-MM-DD, return it to avoid any TZ shifts
   if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
   
-  // Try to parse DD-MM-YYYY or DD/MM/YYYY or D/M/YYYY
+  // 2. Try to parse with new Date()
+  const parsed = new Date(dateStr);
+  if (!isNaN(parsed.getTime())) {
+    // Use local getters to ensure the date is displayed as intended in the user's timezone.
+    // This correctly handles ISO strings like 2024-01-01T17:00:00.000Z as the local next day.
+    const year = parsed.getFullYear();
+    const month = String(parsed.getMonth() + 1).padStart(2, '0');
+    const day = String(parsed.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  // 3. Fallback: Try to parse DD-MM-YYYY or DD/MM/YYYY or D/M/YYYY
   const parts = dateStr.split(/[-/]/);
   if (parts.length === 3) {
     if (parts[0].length === 4) {
-      // YYYY-MM-DD (but maybe not zero padded)
+      // YYYY-MM-DD (but maybe not zero padded or has extra chars)
       return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].substring(0, 2).padStart(2, '0')}`;
     } else if (parts[2].length === 4) {
       // DD-MM-YYYY or D-M-YYYY
-      return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+      const yearPart = parts[2].substring(0, 4);
+      return `${yearPart}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
     }
   }
   
-  // Final fallback using standard Date parsing
-  const parsed = new Date(dateStr);
-  if (!isNaN(parsed.getTime())) {
-    return parsed.toISOString().split('T')[0];
-  }
-
   return dateStr;
 };
 
